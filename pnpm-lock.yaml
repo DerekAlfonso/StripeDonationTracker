@@ -11,9 +11,6 @@ importers:
       '@netlify/blobs':
         specifier: ^11.1.0
         version: 11.1.0
-      '@netlify/dev-utils':
-        specifier: 6.0.1
-        version: 6.0.1
 
 packages:
 

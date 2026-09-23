@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b18">
+  <title>Giving Board</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#dashboard" aria-label="Giving Board dashboard"><span class="brand-mark">✳</span><span>GIVING<span class="brand-light">BOARD</span></span></a>
+      <nav aria-label="Main navigation"><a href="#dashboard" data-nav="dashboard">Dashboard</a><a href="#configure" data-nav="configure">Configure</a></nav>
+      <div class="top-actions"><span id="mode-badge" class="mode-badge">DEMO MODE</span><button id="fullscreen-button" class="icon-button" type="button" title="Toggle full screen" aria-label="Toggle full screen">⛶</button></div>
+    </header>
+
+    <main>
+      <section id="dashboard-page" class="page dashboard-page" aria-labelledby="dashboard-title">
+        <div class="hero-row"><div><div class="eyebrow"><span class="pulse"></span> LIVE CAMPAIGN TRACKER</div><h1 id="dashboard-title">Every gift makes<br><em>a difference.</em></h1><p id="campaign-subtitle" class="subtitle">Your fundraising campaign, at a glance.</p></div><div class="hero-actions"><button id="refresh-button" class="button button-quiet" type="button">↻ <span>Refresh now</span></button><span id="last-sync" class="sync-note">Showing sample data</span></div></div>
+
+        <div class="kpi-grid">
+          <article class="kpi-card"><div class="kpi-label">TOTAL DONATIONS <span class="kpi-icon">↗</span></div><div id="donation-count" class="kpi-value">0</div><div class="kpi-foot">completed contributions</div></article>
+          <article class="kpi-card"><div class="kpi-label">TOTAL RAISED <span class="kpi-icon">✦</span></div><div id="donation-total" class="kpi-value">$0</div><div class="kpi-foot">toward your cause</div></article>
+          <article class="kpi-card"><div class="kpi-label">CAMPAIGN TIMER <span class="kpi-icon">◷</span></div><div id="campaign-timer" class="kpi-value tabular">00:00</div><div class="kpi-foot"><button id="timer-button" class="text-button" type="button">▶ Start timer</button><button id="timer-reset" class="text-button subtle" type="button">Reset</button></div></article>
+          <article class="kpi-card"><div class="kpi-label">SINCE LAST GIFT <span class="kpi-icon">◌</span></div><div id="since-last" class="kpi-value tabular">—</div><div id="last-gift-caption" class="kpi-foot">Waiting for a donation</div></article>
+        </div>
+
+        <section class="leaderboard-panel" aria-labelledby="leaderboard-title"><div class="panel-heading"><div><div class="eyebrow dark">THE PEOPLE BEHIND THE IMPACT</div><h2 id="leaderboard-title">Top 10 leaderboard</h2></div><div class="panel-right"><span class="legend-dot"></span> Total donated <span id="link-label" class="link-pill">Sample campaign</span></div></div><div id="chart" class="chart" role="img" aria-label="Top ten donation totals by For name"></div><div id="empty-chart" class="empty-chart" hidden>No completed donations yet. Share your campaign link to get started.</div></section>
+        <div class="dashboard-footer"><span id="connection-message">Demo data is displayed until a Stripe connection is configured.</span><a href="#configure">Configure your campaign →</a></div>
+      </section>
+
+      <section id="configure-page" class="page config-page" hidden aria-labelledby="configure-title"><div class="config-intro"><div class="eyebrow"><span class="pulse"></span> CAMPAIGN SETUP</div><h1 id="configure-title">Make it <em>yours.</em></h1><p>Set up your campaign, choose a Stripe Payment Link, and share a tracked donation URL.</p></div>
+        <div class="config-grid"><div class="config-main">
+          <section class="config-card"><div class="section-number">01</div><div class="section-content"><h2>Campaign details</h2><p>These settings are saved in this browser only.</p><label for="campaign-name">Campaign name</label><input id="campaign-name" type="text" maxlength="80" placeholder="e.g. Spring Community Fundraiser"><label for="poll-seconds">Refresh every</label><div class="input-suffix"><input id="poll-seconds" type="number" min="10" max="3600" step="1" value="30"><span>seconds</span></div></div></section>
+          <section class="config-card"><div class="section-number">02</div><div class="section-content"><h2>Stripe connection</h2><p id="connection-guidance">Set a restricted read-only Stripe key and a dashboard access token in Netlify, then enter the access token here.</p><label for="access-token">Dashboard access token</label><div class="secret-field"><input id="access-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token set as DASHBOARD_TOKEN in Netlify"><button id="toggle-token" class="text-button" type="button">Show</button></div><div class="callout"><strong>Keep Stripe credentials private</strong><span>The <code>STRIPE_RESTRICTED_KEY</code> environment variable stays in the Netlify Function. The dashboard token is saved only in this browser; use this page on a trusted device.</span></div><div class="button-row"><button id="connect-button" class="button button-primary" type="button">Connect to Stripe →</button><button id="clear-token-button" class="button button-quiet" type="button">Remove token</button></div><div id="connect-status" class="form-status" role="status"></div></div></section>
+          <section class="config-card"><div class="section-number">03</div><div class="section-content"><h2>Select a Payment Link</h2><p>Active links from the connected Stripe mode appear here.</p><label for="payment-link">Payment Link</label><select id="payment-link"><option value="">Connect to Stripe to load links</option></select><div id="link-details" class="link-details"></div><button id="reload-links" class="text-button" type="button">↻ Reload links</button></div></section>
+          <section class="config-card"><div class="section-number">04</div><div class="section-content"><h2>Share a tracked link</h2><p>Enter the name to credit. The share URL includes <code>?for=</code>; the donation page sends it to Stripe as <code>client_reference_id</code>.</p><label for="for-name">Credit this name</label><input id="for-name" type="text" maxlength="120" placeholder="e.g. Derek A"><label for="share-url">Donation URL</label><div class="copy-field"><input id="share-url" type="text" readonly placeholder="Choose a Payment Link first"><button id="copy-link" class="button button-primary" type="button">Copy</button></div><p class="fine-print">The app encodes names to fit Stripe’s reference ID rules. Share this generated URL, not the raw Stripe URL.</p></div></section>
+        </div><aside class="setup-guide"><div class="guide-header">SETUP GUIDE <span>↗</span></div><h2>Get ready<br>to give.</h2><ol><li><strong>Create a Stripe sandbox</strong><span>Start in test mode so no real money moves.</span></li><li><strong>Create a donation Payment Link</strong><span>In Stripe Payment Links, create a new link and choose “Customers choose what to pay.” Select a one-time USD payment and publish the link.</span></li><li><strong>Create a restricted key</strong><span>In Stripe Developers → API keys, create a restricted key for the same test mode. Grant read access to Payment Links, Checkout Sessions, Payment Intents, and Charges.</span></li><li><strong>Set Netlify environment variables</strong><span>Set <code>STRIPE_RESTRICTED_KEY</code> to the restricted key and <code>DASHBOARD_TOKEN</code> to a long random secret, then redeploy.</span></li><li><strong>Connect and choose a link</strong><span>Enter the dashboard token here, load active links, select your donation link, and save.</span></li><li><strong>Make a test donation</strong><span>Open a generated share URL and use card <code>4242 4242 4242 4242</code>, any future expiration date, and any CVC. The board updates on the next poll.</span></li></ol><div class="guide-note">The board counts paid Checkout Sessions for the selected link. Pending or failed payments are excluded.</div></aside></div><div class="config-save"><button id="save-button" class="button button-primary" type="button">Save configuration</button><span id="save-status" role="status"></span></div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

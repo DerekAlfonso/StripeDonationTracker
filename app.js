@@ -2,8 +2,9 @@ import { shareUrl, stripeRedirect, summarize } from './data.js';
 
 const STORAGE = 'giving-board-config-v1';
 const TIMER = 'giving-board-timer-v1';
+const DEFAULT_CAMPAIGN_NAME = 'TCBC Text-a-Thon';
 const $ = id => document.getElementById(id);
-const barColors = ['#57e6c2', '#ffbd69', '#fa76a8', '#a88bff', '#56c8ff', '#d8e66b', '#ff8d72', '#79e0f2', '#d195f5', '#8be19a'];
+const barColors = ['#ff6b6b', '#62aaff', '#ff9980', '#8ac7ff', '#f479a8', '#5cd5e8', '#ffb56f', '#9ba5ff', '#ed86d8', '#91d4ff'];
 const demoDonations = [
   ['Derek A', 82500, 2], ['Avery B', 74000, 5], ['Samira K', 58000, 8], ['Jordan M', 53000, 14],
   ['Taylor R', 44500, 22], ['Morgan L', 36000, 35], ['Riley C', 31000, 49], ['Charlie P', 26500, 60],
@@ -20,8 +21,10 @@ let timer = readTimer();
 let lastGiftAt = 0;
 
 function readConfig() {
-  try { return { name: '', pollSeconds: 30, token: '', linkId: '', ...JSON.parse(localStorage.getItem(STORAGE) || '{}') }; }
-  catch { return { name: '', pollSeconds: 30, token: '', linkId: '' }; }
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+    return { name: DEFAULT_CAMPAIGN_NAME, pollSeconds: 30, token: '', linkId: '', ...stored, name: stored.name?.trim() || DEFAULT_CAMPAIGN_NAME };
+  } catch { return { name: DEFAULT_CAMPAIGN_NAME, pollSeconds: 30, token: '', linkId: '' }; }
 }
 function readTimer() {
   try { return { elapsed: 0, startedAt: null, ...JSON.parse(localStorage.getItem(TIMER) || '{}') }; }
@@ -142,7 +145,7 @@ function route() {
 function save() {
   const seconds = Number($('poll-seconds').value);
   if (!Number.isInteger(seconds) || seconds < 10 || seconds > 3600) { $('save-status').textContent = 'Choose a refresh interval from 10 to 3600 seconds.'; return; }
-  config = { name: $('campaign-name').value.trim(), pollSeconds: seconds, token: $('access-token').value.trim(), linkId: $('payment-link').value };
+  config = { name: $('campaign-name').value.trim() || DEFAULT_CAMPAIGN_NAME, pollSeconds: seconds, token: $('access-token').value.trim(), linkId: $('payment-link').value };
   localStorage.setItem(STORAGE, JSON.stringify(config));
   $('save-status').textContent = 'Saved in this browser.';
   if (config.linkId && config.token) { refreshDonations(); schedulePoll(); }

@@ -1,4 +1,4 @@
-# Giving Board
+# TCBC Text-a-Thon
 
 A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings, selected link, polling interval, and dashboard access token are saved in the operator browser's local storage. A small Netlify Function reads Stripe; the restricted Stripe key stays in Netlify's environment. The public `/donate?for=...` page forwards donors to Stripe without using the function.
 
@@ -13,14 +13,14 @@ A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings,
 
 The dashboard token is stored in that browser's local storage. It grants read access to the Function's campaign data, so use a trusted device and do not share it with donors. The Stripe restricted key is never sent to the browser. The Function returns only the fields needed for the dashboard and rejects requests without the token.
 
-Use the ⛶ button in the top bar to present the dashboard full-screen. The top bar disappears in full-screen mode; press **Esc** to leave it. The chart and KPI cards expand across wide monitors, and each leaderboard bar has its own color.
+Use the ⛶ button in the top bar to present the dashboard full-screen. The top bar and introductory title disappear in full-screen mode, leaving the KPIs and chart; press **Esc** to leave it. The chart and KPI cards expand across wide monitors, and each leaderboard bar has its own color.
 
 ## Make a donation link in Stripe
 
 1. Use a [Stripe sandbox](https://docs.stripe.com/sandboxes) or test mode first.
 2. Open [Payment Links → Create](https://dashboard.stripe.com/payment-links/create/customer-chooses-pricing), select **Customers choose what to pay**, add a campaign title, optionally set suggested/minimum/maximum amounts, and create the link. This option is for one-time donations.
 3. Create a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) in the **same mode** with read access as described above.
-4. Configure Netlify and select the link in Giving Board. Enter a name such as `Derek A` in **Credit this name** and copy the generated URL. It contains `?for=Derek+A`.
+4. Configure Netlify and select the link in TCBC Text-a-Thon. Enter a name such as `Derek A` in **Credit this name** and copy the generated URL. It contains `?for=Derek+A`.
 
 The generated URL opens a static page on this site. That page encodes the name into Stripe's supported `client_reference_id` query parameter and redirects to the selected Payment Link. Stripe does not support a raw `for` query parameter as a Checkout field. The dashboard decodes the reference and uses it for the leaderboard. If a donation has no generated reference, a Stripe Checkout custom field with key `for` is used when available; otherwise it is shown as **Unattributed**. Names in share links are public and should not include sensitive information.
 

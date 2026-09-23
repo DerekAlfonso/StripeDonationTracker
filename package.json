@@ -1,5 +1,5 @@
 {
-  "name": "giving-board",
+  "name": "tcbc-text-a-thon",
   "private": true,
   "type": "module",
   "scripts": { "test": "node --test" }

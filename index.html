@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101b18">
-  <title>Giving Board</title>
+  <meta name="theme-color" content="#740000">
+  <title>TCBC Text-a-Thon</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="theme.css">
   <script type="module" src="app.js"></script>
@@ -12,7 +12,7 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#dashboard" aria-label="Giving Board dashboard"><span class="brand-mark">✳</span><span>GIVING<span class="brand-light">BOARD</span></span></a>
+      <a class="brand" href="#dashboard" aria-label="TCBC Text-a-Thon dashboard"><span class="brand-mark">TC</span><span>TCBC<span class="brand-light"> TEXT-A-THON</span></span></a>
       <nav aria-label="Main navigation"><a href="#dashboard" data-nav="dashboard">Dashboard</a><a href="#configure" data-nav="configure">Configure</a></nav>
       <div class="top-actions"><span id="mode-badge" class="mode-badge">DEMO MODE</span><button id="fullscreen-button" class="icon-button" type="button" title="Toggle full screen" aria-label="Toggle full screen">⛶</button></div>
     </header>
@@ -34,7 +34,7 @@
 
       <section id="configure-page" class="page config-page" hidden aria-labelledby="configure-title"><div class="config-intro"><div class="eyebrow"><span class="pulse"></span> CAMPAIGN SETUP</div><h1 id="configure-title">Make it <em>yours.</em></h1><p>Set up your campaign, choose a Stripe Payment Link, and share a tracked donation URL.</p></div>
         <div class="config-grid"><div class="config-main">
-          <section class="config-card"><div class="section-number">01</div><div class="section-content"><h2>Campaign details</h2><p>These settings are saved in this browser only.</p><label for="campaign-name">Campaign name</label><input id="campaign-name" type="text" maxlength="80" placeholder="e.g. Spring Community Fundraiser"><label for="poll-seconds">Refresh every</label><div class="input-suffix"><input id="poll-seconds" type="number" min="10" max="3600" step="1" value="30"><span>seconds</span></div></div></section>
+          <section class="config-card"><div class="section-number">01</div><div class="section-content"><h2>Campaign details</h2><p>These settings are saved in this browser only.</p><label for="campaign-name">Campaign name</label><input id="campaign-name" type="text" maxlength="80" placeholder="TCBC Text-a-Thon"><label for="poll-seconds">Refresh every</label><div class="input-suffix"><input id="poll-seconds" type="number" min="10" max="3600" step="1" value="30"><span>seconds</span></div></div></section>
           <section class="config-card"><div class="section-number">02</div><div class="section-content"><h2>Stripe connection</h2><p id="connection-guidance">Set a restricted read-only Stripe key and a dashboard access token in Netlify, then enter the access token here.</p><label for="access-token">Dashboard access token</label><div class="secret-field"><input id="access-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token set as DASHBOARD_TOKEN in Netlify"><button id="toggle-token" class="text-button" type="button">Show</button></div><div class="callout"><strong>Keep Stripe credentials private</strong><span>The <code>STRIPE_RESTRICTED_KEY</code> environment variable stays in the Netlify Function. The dashboard token is saved only in this browser; use this page on a trusted device.</span></div><div class="button-row"><button id="connect-button" class="button button-primary" type="button">Connect to Stripe →</button><button id="clear-token-button" class="button button-quiet" type="button">Remove token</button></div><div id="connect-status" class="form-status" role="status"></div></div></section>
           <section class="config-card"><div class="section-number">03</div><div class="section-content"><h2>Select a Payment Link</h2><p>Active links from the connected Stripe mode appear here.</p><label for="payment-link">Payment Link</label><select id="payment-link"><option value="">Connect to Stripe to load links</option></select><div id="link-details" class="link-details"></div><button id="reload-links" class="text-button" type="button">↻ Reload links</button></div></section>
           <section class="config-card"><div class="section-number">04</div><div class="section-content"><h2>Share a tracked link</h2><p>Enter the name to credit. The share URL includes <code>?for=</code>; the donation page sends it to Stripe as <code>client_reference_id</code>.</p><label for="for-name">Credit this name</label><input id="for-name" type="text" maxlength="120" placeholder="e.g. Derek A"><label for="share-url">Donation URL</label><div class="copy-field"><input id="share-url" type="text" readonly placeholder="Choose a Payment Link first"><button id="copy-link" class="button button-primary" type="button">Copy</button></div><p class="fine-print">The app encodes names to fit Stripe’s reference ID rules. Share this generated URL, not the raw Stripe URL.</p></div></section>

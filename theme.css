@@ -105,4 +105,5 @@ h1 em { color: #ff9292; }
   .page { padding-left: 16px; padding-right: 16px; }
   .topbar { background: var(--brand-red); }
   .kpi-card { min-height: 135px; }
+  .kpi-value.tabular { font-size: clamp(20px, 6vw, 30px); }
 }

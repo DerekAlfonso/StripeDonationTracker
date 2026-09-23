@@ -6,12 +6,14 @@ A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings,
 
 1. Deploy this repository to Netlify. It has no build step or package dependencies. `netlify.toml` publishes the root directory and includes the Netlify Function.
 2. In Netlify **Site configuration → Environment variables**, add:
-   - `STRIPE_RESTRICTED_KEY`: a Stripe `rk_test_...` or `rk_live_...` key with **Read** permission for **Payment Links**, **Checkout Sessions**, **Payment Intents**, and **Charges**. Leave every other permission at **None** unless Stripe says one is required. The last two allow the timer to use the payment charge timestamp.
+   - `STRIPE_RESTRICTED_KEY`: a Stripe `rk_test_...` or `rk_live_...` key with **Read** permission for **Payment Links**, **Prices**, **Checkout Sessions**, **Payment Intents**, and **Charges**. Leave every other permission at **None** unless Stripe says one is required. Payment Link prices identify customer-chosen amounts; the last two allow the timer to use the payment charge timestamp.
    - `DASHBOARD_TOKEN`: a private, random token of at least 20 characters. Use a password manager to generate it.
 3. Redeploy after setting or changing environment variables.
-4. Open the deployed site on a trusted operator device, choose **Configure**, enter the dashboard token, connect to Stripe, select a Payment Link, set the campaign name and refresh interval, then **Save configuration**. The interval can be 10–3600 seconds.
+4. Open the deployed site on a trusted operator device, choose **Configure**, enter the dashboard token, connect to Stripe, review the selected Payment Link, set the campaign name and refresh interval, then **Save configuration**. Links appear alphabetically by name, and the first link with customer-chosen pricing is selected when there is no saved selection. The interval can be 10–3600 seconds.
 
 The dashboard token is stored in that browser's local storage. It grants read access to the Function's campaign data, so use a trusted device and do not share it with donors. The Stripe restricted key is never sent to the browser. The Function returns only the fields needed for the dashboard and rejects requests without the token.
+
+Stripe does not expose the Dashboard's Payment Link title as a dedicated API field. The link list uses its `name` or `title` metadata when present, otherwise the first product's description. Links without either appear as **Untitled Payment Link**; their URLs are shown below the selector to help identify them.
 
 Use the ⛶ button in the top bar to present the dashboard full-screen. The top bar and introductory title disappear in full-screen mode, leaving the KPIs and chart; press **Esc** to leave it. The chart and KPI cards expand across wide monitors, and each leaderboard bar has its own color.
 

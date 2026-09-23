@@ -21,7 +21,7 @@ test('function paginates links and returns only paid completed sessions', async 
     requested.push(parsed);
     if (parsed.pathname === '/v1/payment_links') {
       const second = parsed.searchParams.has('starting_after');
-      return { ok: true, json: async () => second ? { data: [{ id: 'plink_b', url: 'https://buy.stripe.com/test_b', active: true }], has_more: false } : { data: [{ id: 'plink_a', url: 'https://buy.stripe.com/test_a', active: true }], has_more: true } };
+      return { ok: true, json: async () => second ? { data: [{ id: 'plink_b', url: 'https://buy.stripe.com/test_b', active: true, metadata: { name: 'Summer drive' }, line_items: { data: [{ description: 'Donation', price: { custom_unit_amount: null } }] } }], has_more: false } : { data: [{ id: 'plink_a', url: 'https://buy.stripe.com/test_a', active: true, line_items: { data: [{ description: 'Choir campaign', price: { custom_unit_amount: { minimum: 100 } } }] } }], has_more: true } };
     }
     return { ok: true, json: async () => ({ data: [
       { id: 'cs_1', mode: 'payment', status: 'complete', payment_status: 'paid', amount_total: 2500, currency: 'usd', created: 12, payment_intent: { created: 13, latest_charge: { created: 15 } }, client_reference_id: 'gb_Test' },
@@ -31,6 +31,9 @@ test('function paginates links and returns only paid completed sessions', async 
   };
   const links = JSON.parse((await handler(event('links'))).body);
   assert.deepEqual(links.links.map(link => link.id), ['plink_a', 'plink_b']);
+  assert.deepEqual(links.links.map(link => link.name), ['Choir campaign', 'Summer drive']);
+  assert.deepEqual(links.links.map(link => link.customerChoosesAmount), [true, false]);
+  assert.equal(requested[0].searchParams.get('expand[]'), 'data.line_items');
   const donations = JSON.parse((await handler(event('donations', { link: 'plink_a' }))).body);
   assert.equal(donations.donations.length, 1);
   assert.equal(donations.donations[0].amount, 2500);

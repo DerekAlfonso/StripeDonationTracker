@@ -1,4 +1,4 @@
-import { shareUrl, stripeRedirect, summarize } from './data.js';
+import { preferredPaymentLinkId, shareUrl, sortPaymentLinks, stripeRedirect, summarize } from './data.js';
 
 const STORAGE = 'giving-board-config-v1';
 const TIMER = 'giving-board-timer-v1';
@@ -72,18 +72,18 @@ function renderDashboard() {
   $('last-gift-caption').textContent = summary.lastDonation ? 'since the last completed payment' : 'Waiting for a donation';
   $('campaign-subtitle').textContent = config.name ? `${config.name}, at a glance.` : 'Your fundraising campaign, at a glance.';
   const selected = links.find(link => link.id === config.linkId);
-  $('link-label').textContent = selected ? (selected.metadata?.name || selected.id) : mode === 'demo' ? 'Sample campaign' : config.linkId || 'No link selected';
+  $('link-label').textContent = selected ? selected.name : mode === 'demo' ? 'Sample campaign' : config.linkId || 'No link selected';
   const badge = $('mode-badge'); badge.className = `mode-badge ${mode}`; badge.textContent = mode === 'demo' ? 'DEMO MODE' : `${mode.toUpperCase()} MODE`;
   $('connection-message').textContent = mode === 'demo' ? 'Demo data is displayed until a Stripe connection is configured.' : `Showing paid Checkout Sessions for ${config.linkId}.`;
   renderChart(summary); tick();
 }
-function renderLinks() {
+function renderLinks(selectedId) {
   const select = $('payment-link'); select.replaceChildren();
   const first = document.createElement('option'); first.value = ''; first.textContent = links.length ? 'Choose a Payment Link' : 'No active links loaded'; select.append(first);
   for (const link of links) {
-    const option = document.createElement('option'); option.value = link.id; option.textContent = `${link.metadata?.name || link.id} · ${link.currency?.toUpperCase() || 'USD'} · ${link.url}`; select.append(option);
+    const option = document.createElement('option'); option.value = link.id; option.textContent = link.name; select.append(option);
   }
-  select.value = links.some(link => link.id === config.linkId) ? config.linkId : '';
+  select.value = selectedId;
   renderLinkDetails();
 }
 function renderLinkDetails() {
@@ -112,8 +112,17 @@ async function loadLinks() {
   try {
     const result = await api('links');
     mode = result.mode;
-    links = result.links;
-    renderLinks(); renderDashboard();
+    const currentId = $('payment-link').value || config.linkId;
+    links = sortPaymentLinks(result.links);
+    const selectedId = preferredPaymentLinkId(links, currentId);
+    renderLinks(selectedId);
+    if (!links.some(link => link.id === config.linkId) && config.token && config.token === $('access-token').value.trim()) {
+      config.linkId = selectedId;
+      localStorage.setItem(STORAGE, JSON.stringify(config));
+      donations = [];
+      schedulePoll();
+    }
+    renderDashboard();
     setStatus(`${links.length} active Payment Link${links.length === 1 ? '' : 's'} loaded from Stripe ${mode} mode.`);
     if (config.linkId) await refreshDonations();
   } catch (error) { setStatus(error.message, true); $('connection-message').textContent = error.message; }

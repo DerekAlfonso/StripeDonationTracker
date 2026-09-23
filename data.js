@@ -27,6 +27,15 @@ export function getFor(donation) {
   return String(value || 'Unattributed').trim() || 'Unattributed';
 }
 
+export function sortPaymentLinks(links) {
+  const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
+  return [...links].sort((a, b) => collator.compare(a.name, b.name) || collator.compare(a.id, b.id));
+}
+
+export function preferredPaymentLinkId(links, currentId = '') {
+  return links.find(link => link.id === currentId)?.id || links.find(link => link.customerChoosesAmount)?.id || links[0]?.id || '';
+}
+
 export function summarize(donations) {
   const valid = donations.filter(item => Number.isSafeInteger(item.amount) && item.amount >= 0 && typeof item.currency === 'string');
   const currencies = [...new Set(valid.map(item => item.currency.toLowerCase()))];

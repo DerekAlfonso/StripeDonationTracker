@@ -53,8 +53,16 @@ exports.handler = async (event) => {
     const action = event.queryStringParameters?.action;
     const mode = key.startsWith('rk_test_') ? 'test' : 'live';
     if (action === 'links') {
-      const links = await listAll('payment_links', { limit: 100, active: true }, key);
-      return respond(200, { mode, links: links.map(link => ({ id: link.id, url: link.url, active: link.active, currency: link.currency, livemode: link.livemode, metadata: link.metadata || {}, customFields: link.custom_fields || [] })) });
+      const links = await listAll('payment_links', { limit: 100, active: true, 'expand[]': 'data.line_items' }, key);
+      return respond(200, { mode, links: links.map(link => {
+        const items = link.line_items?.data || [];
+        const name = [link.metadata?.name, link.metadata?.title, items[0]?.description]
+          .find(value => typeof value === 'string' && value.trim())?.trim() || 'Untitled Payment Link';
+        return {
+          id: link.id, name, url: link.url, active: link.active, currency: link.currency,
+          livemode: link.livemode, customerChoosesAmount: items.some(item => item.price?.custom_unit_amount != null),
+        };
+      }) });
     }
     if (action === 'donations') {
       const linkId = event.queryStringParameters?.link;

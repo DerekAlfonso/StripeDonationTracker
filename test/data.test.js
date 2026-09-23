@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeFor, decodeFor, getFor, shareUrl, stripeRedirect, summarize } from '../data.js';
+import { encodeFor, decodeFor, getFor, preferredPaymentLinkId, shareUrl, sortPaymentLinks, stripeRedirect, summarize } from '../data.js';
 
 test('share URL preserves the requested for parameter and Stripe receives a valid reference', () => {
   const url = shareUrl('https://giving.example', 'https://buy.stripe.com/test_abc', 'Derek A');
@@ -34,4 +34,17 @@ test('For custom field provides a fallback when no share reference exists', () =
   assert.equal(getFor({ customFields: [{ key: 'for', text: { value: 'Morgan' } }] }), 'Morgan');
   assert.equal(getFor({}), 'Unattributed');
   assert.throws(() => summarize([{ amount: 100, currency: 'usd' }, { amount: 100, currency: 'eur' }]));
+});
+
+test('payment links sort by name and prefer the first variable amount link unless a saved choice is valid', () => {
+  const links = sortPaymentLinks([
+    { id: 'plink_z', name: 'Zebra', customerChoosesAmount: true },
+    { id: 'plink_f', name: 'alpha', customerChoosesAmount: false },
+    { id: 'plink_a', name: 'Apple', customerChoosesAmount: true },
+  ]);
+  assert.deepEqual(links.map(link => link.name), ['alpha', 'Apple', 'Zebra']);
+  assert.equal(preferredPaymentLinkId(links), 'plink_a');
+  assert.equal(preferredPaymentLinkId(links, 'plink_f'), 'plink_f');
+  assert.equal(preferredPaymentLinkId(links, 'plink_missing'), 'plink_a');
+  assert.equal(preferredPaymentLinkId(links.filter(link => !link.customerChoosesAmount)), 'plink_f');
 });

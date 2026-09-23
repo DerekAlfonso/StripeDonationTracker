@@ -58,7 +58,7 @@ function renderChart(summary) {
     const col = document.createElement('div'); col.className = 'bar-column';
     col.style.setProperty('--bar-color', barColors[index]);
     const amount = document.createElement('div'); amount.className = 'bar-value'; amount.textContent = money(leader.amount, summary.currency, true);
-    const bar = document.createElement('div'); bar.className = 'bar'; bar.style.height = `max(3px, calc(var(--chart-bars-height) * ${leader.amount / max}))`;
+    const bar = document.createElement('div'); bar.className = 'bar'; bar.style.height = `max(3px, calc((100% - 60px) * ${leader.amount / max}))`;
     const name = document.createElement('div'); name.className = 'bar-name'; name.textContent = leader.name; name.title = leader.name;
     col.append(amount, bar, name); chart.append(col);
   }

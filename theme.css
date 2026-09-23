@@ -45,13 +45,16 @@ h1 em { color: #ff9292; }
 .panel-right { color: #c2d5ec; }
 .legend-dot { background: #ff8585; }
 .link-pill { background: #123f72; color: #e1edff; }
+.leaderboard-panel { display: flex; flex-direction: column; }
 .chart { height: calc(var(--chart-bars-height) + 66px); border-bottom-color: #47709e; }
 .bar-column { width: 100%; }
 .bar { max-width: 180px; background: linear-gradient(180deg, color-mix(in srgb, var(--bar-color), white 14%), color-mix(in srgb, var(--bar-color), #061424 14%)); box-shadow: 0 0 23px color-mix(in srgb, var(--bar-color), transparent 82%); }
 .bar-column:first-child .bar { background: linear-gradient(180deg, color-mix(in srgb, var(--bar-color), white 14%), color-mix(in srgb, var(--bar-color), #061424 14%)); }
 .bar-value { color: var(--bar-color); }
 .bar-name { color: #e2ecfb; }
-.empty-chart, .dashboard-footer { color: #a9bedb; }
+.empty-chart { display: flex; align-items: center; justify-content: center; min-height: 280px; padding: 24px; text-align: center; color: #fff; font: 700 clamp(26px, 3.5vw, 58px)/1.2 'Playfair Display', Georgia, serif; letter-spacing: -.025em; }
+.empty-chart strong { color: #ff9d9d; }
+.dashboard-footer { color: #a9bedb; }
 .dashboard-footer a { color: #ff9d9d; }
 
 .section-content p, .section-content label, .link-details, .fine-print { color: #bdcfea; }
@@ -76,11 +79,12 @@ h1 em { color: #ff9292; }
 
 :fullscreen .topbar { display: none; }
 :fullscreen .page { padding-top: clamp(22px, 3vh, 50px); }
-:fullscreen .dashboard-page { min-height: 100vh; }
-:fullscreen { --chart-bars-height: clamp(280px, 43vh, 600px); }
+:fullscreen .dashboard-page { display: flex; flex-direction: column; height: 100dvh; min-height: 550px; padding-bottom: clamp(18px, 2vh, 34px); }
 :fullscreen .dashboard-page .hero-row { display: none; }
 :fullscreen .kpi-grid { margin-top: 28px; }
-:fullscreen .leaderboard-panel { margin-top: 20px; padding-top: 25px; padding-bottom: 20px; }
+:fullscreen .leaderboard-panel { flex: 1; min-height: 0; margin-top: 20px; padding-top: 25px; padding-bottom: 20px; }
+:fullscreen .chart { flex: 1; height: auto; min-height: 220px; }
+:fullscreen .empty-chart { flex: 1; min-height: 220px; }
 
 @media (min-width: 1700px) {
   h1 { font-size: clamp(75px, 5vw, 110px); }

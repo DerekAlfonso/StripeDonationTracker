@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { handler } = require('../netlify/functions/stripe.cjs');
+const campaign = require('../netlify/lib/campaign.cjs');
 
 const token = 'very-long-private-dashboard-token';
 const event = (action, extras = {}) => ({ httpMethod: 'GET', headers: { authorization: `Bearer ${token}` }, queryStringParameters: { action, ...extras } });
@@ -12,7 +13,8 @@ test('function denies access without the dashboard token', async () => {
   assert.equal(response.statusCode, 401);
 });
 
-test('function paginates links and returns only paid completed sessions', async () => {
+test('function paginates links and returns only paid completed sessions', async (t) => {
+  t.mock.method(campaign, 'read', async () => '');
   process.env.STRIPE_RESTRICTED_KEY = 'rk_test_mock';
   process.env.DASHBOARD_TOKEN = token;
   const requested = [];
@@ -31,6 +33,7 @@ test('function paginates links and returns only paid completed sessions', async 
   };
   const links = JSON.parse((await handler(event('links'))).body);
   assert.deepEqual(links.links.map(link => link.id), ['plink_a', 'plink_b']);
+  assert.equal(links.campaignLinkId, '');
   assert.deepEqual(links.links.map(link => link.name), ['Choir campaign', 'Summer drive']);
   assert.deepEqual(links.links.map(link => link.customerChoosesAmount), [true, false]);
   assert.equal(requested[0].searchParams.get('expand[]'), 'data.line_items');
@@ -40,4 +43,17 @@ test('function paginates links and returns only paid completed sessions', async 
   assert.equal(donations.donations[0].created, 15);
   assert.equal(requested.at(-1).searchParams.get('payment_link'), 'plink_a');
   assert.equal(requested.at(-1).searchParams.get('expand[]'), 'data.payment_intent.latest_charge');
+});
+
+test('publishing a link requires a valid active Stripe link and the dashboard token', async (t) => {
+  process.env.STRIPE_RESTRICTED_KEY = 'rk_test_mock';
+  process.env.DASHBOARD_TOKEN = token;
+  const writes = [];
+  t.mock.method(campaign, 'write', async id => writes.push(id));
+  t.mock.method(global, 'fetch', async () => ({ ok: true, json: async () => ({ id: 'plink_good', active: true }) }));
+  const request = { ...event('select'), httpMethod: 'POST', body: JSON.stringify({ linkId: 'plink_good' }) };
+  assert.equal((await handler({ ...request, headers: {} })).statusCode, 401);
+  assert.equal((await handler({ ...request, body: JSON.stringify({ linkId: 'bad' }) })).statusCode, 400);
+  assert.equal((await handler(request)).statusCode, 200);
+  assert.deepEqual(writes, ['plink_good']);
 });

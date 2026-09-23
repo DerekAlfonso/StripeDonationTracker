@@ -1,4 +1,4 @@
-import { preferredPaymentLinkId, shareUrl, sortPaymentLinks, stripeRedirect, summarize } from './data.js';
+import { preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from './data.js';
 
 const STORAGE = 'giving-board-config-v1';
 const TIMER = 'giving-board-timer-v1';
@@ -13,6 +13,7 @@ const demoDonations = [
 
 let config = readConfig();
 let links = [];
+let publishedLinkId = '';
 let donations = demoDonations;
 let mode = 'demo';
 let pollHandle;
@@ -93,15 +94,15 @@ function renderLinkDetails() {
 }
 function renderShareUrl() {
   const selected = links.find(link => link.id === $('payment-link').value);
-  try { $('share-url').value = selected && $('for-name').value.trim() ? shareUrl(location.origin, selected.url, $('for-name').value) : ''; }
+  try { $('share-url').value = selected && selected.id === publishedLinkId && $('for-name').value.trim() ? shareUrl(location.origin, $('for-name').value) : ''; }
   catch { $('share-url').value = ''; }
 }
-async function api(action, query = {}, token = $('access-token').value.trim()) {
+async function api(action, query = {}, token = $('access-token').value.trim(), options = {}) {
   if (!token) throw new Error('Enter the dashboard access token first.');
   const url = new URL('/.netlify/functions/stripe', location.origin);
   url.searchParams.set('action', action);
   for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+  const response = await fetch(url, { method: options.method || 'GET', headers: { Authorization: `Bearer ${token}`, ...(options.body ? { 'Content-Type': 'application/json' } : {}) }, body: options.body, cache: 'no-store' });
   let body;
   try { body = await response.json(); } catch { throw new Error('Stripe function is unavailable. Run through Netlify or Netlify Dev.'); }
   if (!response.ok) throw new Error(body.error || `Request failed (${response.status}).`);
@@ -112,16 +113,20 @@ async function loadLinks() {
   try {
     const result = await api('links');
     mode = result.mode;
+    publishedLinkId = result.campaignLinkId || '';
     const currentId = $('payment-link').value || config.linkId;
     links = sortPaymentLinks(result.links);
     const selectedId = preferredPaymentLinkId(links, currentId);
     renderLinks(selectedId);
-    if (!links.some(link => link.id === config.linkId) && config.token && config.token === $('access-token').value.trim()) {
+    if (selectedId && !links.some(link => link.id === config.linkId) && config.token && config.token === $('access-token').value.trim()) {
+      await api('select', {}, config.token, { method: 'POST', body: JSON.stringify({ linkId: selectedId }) });
+      publishedLinkId = selectedId;
       config.linkId = selectedId;
       localStorage.setItem(STORAGE, JSON.stringify(config));
       donations = [];
       schedulePoll();
     }
+    renderShareUrl();
     renderDashboard();
     setStatus(`${links.length} active Payment Link${links.length === 1 ? '' : 's'} loaded from Stripe ${mode} mode.`);
     if (config.linkId) await refreshDonations();
@@ -151,12 +156,20 @@ function route() {
   $('dashboard-page').hidden = page !== 'dashboard'; $('configure-page').hidden = page !== 'configure';
   for (const nav of document.querySelectorAll('[data-nav]')) nav.classList.toggle('active', nav.dataset.nav === page);
 }
-function save() {
+async function save() {
   const seconds = Number($('poll-seconds').value);
   if (!Number.isInteger(seconds) || seconds < 10 || seconds > 3600) { $('save-status').textContent = 'Choose a refresh interval from 10 to 3600 seconds.'; return; }
-  config = { name: $('campaign-name').value.trim() || DEFAULT_CAMPAIGN_NAME, pollSeconds: seconds, token: $('access-token').value.trim(), linkId: $('payment-link').value };
+  const nextConfig = { name: $('campaign-name').value.trim() || DEFAULT_CAMPAIGN_NAME, pollSeconds: seconds, token: $('access-token').value.trim(), linkId: $('payment-link').value };
+  if (nextConfig.token) {
+    try {
+      await api('select', {}, nextConfig.token, { method: 'POST', body: JSON.stringify({ linkId: nextConfig.linkId }) });
+      publishedLinkId = nextConfig.linkId;
+    } catch (error) { $('save-status').textContent = `Could not publish the donation link: ${error.message}`; return; }
+  } else publishedLinkId = '';
+  config = nextConfig;
   localStorage.setItem(STORAGE, JSON.stringify(config));
-  $('save-status').textContent = 'Saved in this browser.';
+  $('save-status').textContent = config.linkId && publishedLinkId === config.linkId ? 'Saved in this browser and published for shared donation URLs.' : 'Saved in this browser.';
+  renderShareUrl();
   if (config.linkId && config.token) { refreshDonations(); schedulePoll(); }
   else { clearInterval(pollHandle); donations = demoDonations; mode = 'demo'; renderDashboard(); }
 }
@@ -171,7 +184,7 @@ function setup() {
   $('save-button').addEventListener('click', save);
   $('toggle-token').addEventListener('click', () => { const field = $('access-token'); field.type = field.type === 'password' ? 'text' : 'password'; $('toggle-token').textContent = field.type === 'password' ? 'Show' : 'Hide'; });
   $('clear-token-button').addEventListener('click', () => { $('access-token').value = ''; config.token = ''; localStorage.setItem(STORAGE, JSON.stringify(config)); clearInterval(pollHandle); donations = demoDonations; mode = 'demo'; renderDashboard(); setStatus('Token removed from this browser.'); });
-  $('copy-link').addEventListener('click', async () => { if (!$('share-url').value) { $('save-status').textContent = 'Choose a link and enter a name first.'; return; } try { await navigator.clipboard.writeText($('share-url').value); $('copy-link').textContent = 'Copied!'; setTimeout(() => $('copy-link').textContent = 'Copy', 1800); } catch { $('share-url').select(); $('save-status').textContent = 'Select and copy the URL above.'; } });
+  $('copy-link').addEventListener('click', async () => { if (!$('share-url').value) { $('save-status').textContent = 'Save a Payment Link and enter a name first.'; return; } try { await navigator.clipboard.writeText($('share-url').value); $('copy-link').textContent = 'Copied!'; setTimeout(() => $('copy-link').textContent = 'Copy', 1800); } catch { $('share-url').select(); $('save-status').textContent = 'Select and copy the URL above.'; } });
   $('refresh-button').addEventListener('click', refreshDonations);
   $('fullscreen-button').addEventListener('click', async () => { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); });
   $('timer-button').addEventListener('click', () => { if (timer.startedAt) { timer.elapsed += Date.now() - timer.startedAt; timer.startedAt = null; } else timer.startedAt = Date.now(); persistTimer(); tick(); });
@@ -182,8 +195,4 @@ function setup() {
   schedulePoll();
 }
 
-if (location.pathname.replace(/\/$/, '') === '/donate') {
-  document.body.innerHTML = '<main class="redirect-page"><div><div class="brand-mark" style="margin:auto">✳</div><h1>Opening donation page…</h1><p>Please wait while we take you to Stripe.</p></div></main>';
-  try { location.replace(stripeRedirect(location.href)); }
-  catch (error) { document.querySelector('.redirect-page h1').textContent = 'Donation link unavailable'; document.querySelector('.redirect-page p').textContent = error.message; }
-} else setup();
+setup();

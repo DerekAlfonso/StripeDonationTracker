@@ -1,20 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeFor, decodeFor, getFor, preferredPaymentLinkId, shareUrl, sortPaymentLinks, stripeRedirect, summarize } from '../data.js';
+import { encodeFor, decodeFor, getFor, preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from '../data.js';
 
-test('share URL preserves the requested for parameter and Stripe receives a valid reference', () => {
-  const url = shareUrl('https://giving.example', 'https://buy.stripe.com/test_abc', 'Derek A');
-  assert.equal(new URL(url).searchParams.get('for'), 'Derek A');
-  const redirect = new URL(stripeRedirect(url));
-  assert.equal(redirect.hostname, 'buy.stripe.com');
-  assert.match(redirect.searchParams.get('client_reference_id'), /^[A-Za-z0-9_-]+$/);
-  assert.equal(decodeFor(redirect.searchParams.get('client_reference_id')), 'Derek A');
+test('share URL contains only the requested for parameter', () => {
+  const url = new URL(shareUrl('https://giving.example', 'Derek A'));
+  assert.equal(url.pathname, '/donate');
+  assert.equal(url.searchParams.get('for'), 'Derek A');
+  assert.equal(url.searchParams.size, 1);
+  assert.equal(url.hash, '');
 });
 
-test('Unicode names round-trip and malicious destinations are rejected', () => {
+test('Unicode names round-trip and empty share names are rejected', () => {
   assert.equal(decodeFor(encodeFor('José 🌻')), 'José 🌻');
-  assert.throws(() => shareUrl('https://giving.example', 'https://evil.example/steal', 'Derek'));
-  assert.throws(() => stripeRedirect('https://giving.example/donate?for=Derek#link=https%3A%2F%2Fevil.example'));
+  assert.throws(() => shareUrl('https://giving.example', ' '));
 });
 
 test('summarize groups names, sorts descending, and selects the latest paid donation', () => {

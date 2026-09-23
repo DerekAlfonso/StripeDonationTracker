@@ -1,4 +1,5 @@
 const { timingSafeEqual } = require('node:crypto');
+const campaign = require('../lib/campaign.cjs');
 
 const headers = {
   'content-type': 'application/json; charset=utf-8',
@@ -41,7 +42,8 @@ async function listAll(path, params, key) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'GET') return respond(405, { error: 'GET required.' });
+  const action = event.queryStringParameters?.action;
+  if (event.httpMethod !== 'GET' && !(event.httpMethod === 'POST' && action === 'select')) return respond(405, { error: 'Method not allowed.' });
   const key = process.env.STRIPE_RESTRICTED_KEY;
   const token = process.env.DASHBOARD_TOKEN;
   if (!key || !/^rk_(test|live)_/.test(key) || !token || token.length < 20) {
@@ -50,11 +52,24 @@ exports.handler = async (event) => {
   if (!authorized(event.headers.authorization || event.headers.Authorization, token)) return respond(401, { error: 'Invalid dashboard access token.' });
 
   try {
-    const action = event.queryStringParameters?.action;
     const mode = key.startsWith('rk_test_') ? 'test' : 'live';
+    if (action === 'select') {
+      if ((event.body || '').length > 1000) return respond(400, { error: 'Invalid selection.' });
+      let linkId;
+      try { linkId = JSON.parse(event.body || '{}').linkId; }
+      catch { return respond(400, { error: 'Invalid selection.' }); }
+      if (linkId !== '' && !/^plink_[A-Za-z0-9]+$/.test(linkId || '')) return respond(400, { error: 'A valid Payment Link ID is required.' });
+      if (linkId) {
+        const link = await stripeGet(`payment_links/${linkId}`, {}, key);
+        if (link.id !== linkId || !link.active) return respond(400, { error: 'Choose an active Payment Link.' });
+      }
+      await campaign.write(linkId);
+      return respond(200, { mode, linkId });
+    }
     if (action === 'links') {
       const links = await listAll('payment_links', { limit: 100, active: true, 'expand[]': 'data.line_items' }, key);
-      return respond(200, { mode, links: links.map(link => {
+      const campaignLinkId = await campaign.read();
+      return respond(200, { mode, campaignLinkId, links: links.map(link => {
         const items = link.line_items?.data || [];
         const name = [link.metadata?.name, link.metadata?.title, items[0]?.description]
           .find(value => typeof value === 'string' && value.trim())?.trim() || 'Untitled Payment Link';

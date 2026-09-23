@@ -4,5 +4,5 @@
 
 [[redirects]]
   from = "/donate"
-  to = "/index.html"
+  to = "/.netlify/functions/donate"
   status = 200

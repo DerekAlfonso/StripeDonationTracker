@@ -1,17 +1,17 @@
 # TCBC Text-a-Thon
 
-A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings, selected link, polling interval, and dashboard access token are saved in the operator browser's local storage. A small Netlify Function reads Stripe; the restricted Stripe key stays in Netlify's environment. The public `/donate?for=...` page forwards donors to Stripe without using the function.
+A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings, selected link, polling interval, and dashboard access token are saved in the operator browser's local storage. The selected Payment Link ID is also published to a site-wide Netlify Blob when the operator saves configuration. Netlify Functions read Stripe and redirect donors from short `/donate?for=...` URLs; the restricted Stripe key stays in Netlify's environment.
 
 ## Deploy
 
-1. Deploy this repository to Netlify. It has no build step or package dependencies. `netlify.toml` publishes the root directory and includes the Netlify Function.
+1. Deploy this repository to Netlify. Netlify installs the `@netlify/blobs` dependency; no separate build command is needed. `netlify.toml` publishes the root directory and includes the Netlify Functions.
 2. In Netlify **Site configuration → Environment variables**, add:
    - `STRIPE_RESTRICTED_KEY`: a Stripe `rk_test_...` or `rk_live_...` key with **Read** permission for **Payment Links**, **Prices**, **Checkout Sessions**, **Payment Intents**, and **Charges**. Leave every other permission at **None** unless Stripe says one is required. Payment Link prices identify customer-chosen amounts; the last two allow the timer to use the payment charge timestamp.
    - `DASHBOARD_TOKEN`: a private, random token of at least 20 characters. Use a password manager to generate it.
 3. Redeploy after setting or changing environment variables.
-4. Open the deployed site on a trusted operator device, choose **Configure**, enter the dashboard token, connect to Stripe, review the selected Payment Link, set the campaign name and refresh interval, then **Save configuration**. Links appear alphabetically by name, and the first link with customer-chosen pricing is selected when there is no saved selection. The interval can be 10–3600 seconds.
+4. Open the deployed site on a trusted operator device, choose **Configure**, enter the dashboard token, connect to Stripe, review the selected Payment Link, set the campaign name and refresh interval, then **Save configuration**. Saving publishes the selected link to Netlify Blobs, making the short donation URLs available. Links appear alphabetically by name, and the first link with customer-chosen pricing is selected when there is no saved selection. The interval can be 10–3600 seconds.
 
-The dashboard token is stored in that browser's local storage. It grants read access to the Function's campaign data, so use a trusted device and do not share it with donors. The Stripe restricted key is never sent to the browser. The Function returns only the fields needed for the dashboard and rejects requests without the token.
+The dashboard token is stored in that browser's local storage. It grants access to campaign data and permission to publish the selected Payment Link, so use a trusted device and do not share it with donors. The Stripe restricted key is never sent to the browser. The private Function rejects requests without the token. Node.js 24 is pinned in `.nvmrc` for the Netlify Blobs dependency.
 
 Stripe does not expose the Dashboard's Payment Link title as a dedicated API field. The link list uses its `name` or `title` metadata when present, otherwise the first product's description. Links without either appear as **Untitled Payment Link**; their URLs are shown below the selector to help identify them.
 
@@ -24,7 +24,7 @@ Use the ⛶ button in the top bar to present the dashboard full-screen. The top 
 3. Create a [restricted API key](https://docs.stripe.com/keys/restricted-api-keys) in the **same mode** with read access as described above.
 4. Configure Netlify and select the link in TCBC Text-a-Thon. Enter a name such as `Derek A` in **Credit this name** and copy the generated URL. It contains `?for=Derek+A`.
 
-The generated URL opens a static page on this site. That page encodes the name into Stripe's supported `client_reference_id` query parameter and redirects to the selected Payment Link. Stripe does not support a raw `for` query parameter as a Checkout field. The dashboard decodes the reference and uses it for the leaderboard. If a donation has no generated reference, a Stripe Checkout custom field with key `for` is used when available; otherwise it is shown as **Unattributed**. Names in share links are public and should not include sensitive information.
+The generated URL is `/donate?for=Derek+A`. The public Netlify Function reads the published Payment Link ID from Netlify Blobs, fetches the active link from Stripe, encodes the name into Stripe's supported `client_reference_id` query parameter, and redirects the donor. Stripe does not support a raw `for` query parameter as a Checkout field. The dashboard decodes the reference and uses it for the leaderboard. If a donation has no generated reference, a Stripe Checkout custom field with key `for` is used when available; otherwise it is shown as **Unattributed**. Names in share links are public and should not include sensitive information. All generated URLs point to the currently published campaign link, so changing the selection also changes the destination of previously shared URLs.
 
 ## Test without real donations
 
@@ -36,7 +36,7 @@ The “since last gift” timer uses the latest charge creation time from Stripe
 
 ## Local checks
 
-Run `node --test`. To exercise the Netlify Function locally, use Netlify Dev with the two environment variables set. A plain static file server can preview the demo dashboard and donation redirect but does not provide the Function.
+Run `node --test`. To exercise the Netlify Functions and local Blob store, use Netlify Dev with the two environment variables set. A plain static file server can preview the demo dashboard but cannot publish or redirect donation links.
 
 ## References
 

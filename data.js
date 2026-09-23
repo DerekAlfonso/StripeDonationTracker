@@ -51,22 +51,9 @@ export function summarize(donations) {
   return { count: valid.length, total: valid.reduce((sum, item) => sum + item.amount, 0), currency: currencies[0] || 'usd', lastDonation: valid.reduce((max, item) => Math.max(max, Number(item.created || 0)), 0), leaders };
 }
 
-export function shareUrl(siteOrigin, stripeUrl, name) {
-  const stripe = new URL(stripeUrl);
-  if (stripe.protocol !== 'https:' || stripe.hostname !== 'buy.stripe.com') throw new Error('Select a valid Stripe Payment Link.');
+export function shareUrl(siteOrigin, name) {
   encodeFor(name);
   const url = new URL('/donate', siteOrigin);
   url.searchParams.set('for', name.trim());
-  url.hash = `link=${encodeURIComponent(stripe.toString())}`;
   return url.toString();
-}
-
-export function stripeRedirect(locationHref) {
-  const incoming = new URL(locationHref);
-  const name = incoming.searchParams.get('for');
-  const fragment = new URLSearchParams(incoming.hash.slice(1));
-  const stripe = new URL(fragment.get('link') || '');
-  if (stripe.protocol !== 'https:' || stripe.hostname !== 'buy.stripe.com') throw new Error('This donation link has an invalid Stripe destination.');
-  stripe.searchParams.set('client_reference_id', encodeFor(name));
-  return stripe.toString();
 }

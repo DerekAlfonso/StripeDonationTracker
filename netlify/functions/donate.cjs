@@ -1,3 +1,4 @@
+const { connectLambda } = require('@netlify/blobs');
 const campaign = require('../lib/campaign.cjs');
 
 const headers = {
@@ -24,6 +25,7 @@ exports.handler = async (event) => {
   if (!key || !/^rk_(test|live)_/.test(key)) return unavailable(503);
 
   try {
+    connectLambda(event);
     const linkId = await campaign.read();
     if (!/^plink_[A-Za-z0-9]+$/.test(linkId)) return unavailable(503);
     const response = await fetch(`https://api.stripe.com/v1/payment_links/${linkId}`, {

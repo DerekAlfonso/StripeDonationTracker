@@ -4,7 +4,8 @@ const { handler } = require('../netlify/functions/stripe.cjs');
 const campaign = require('../netlify/lib/campaign.cjs');
 
 const token = 'very-long-private-dashboard-token';
-const event = (action, extras = {}) => ({ httpMethod: 'GET', headers: { authorization: `Bearer ${token}` }, queryStringParameters: { action, ...extras } });
+const blobs = Buffer.from(JSON.stringify({ url: 'https://blobs.example.test', token: 'test-blob-token' })).toString('base64');
+const event = (action, extras = {}) => ({ httpMethod: 'GET', headers: { authorization: `Bearer ${token}`, 'x-nf-site-id': 'site-test', 'x-nf-deploy-id': 'deploy-test' }, blobs, queryStringParameters: { action, ...extras } });
 
 test('function denies access without the dashboard token', async () => {
   process.env.STRIPE_RESTRICTED_KEY = 'rk_test_mock';
@@ -15,6 +16,7 @@ test('function denies access without the dashboard token', async () => {
 
 test('function paginates links and returns only paid completed sessions', async (t) => {
   t.mock.method(campaign, 'read', async () => '');
+  delete process.env.NETLIFY_BLOBS_CONTEXT;
   process.env.STRIPE_RESTRICTED_KEY = 'rk_test_mock';
   process.env.DASHBOARD_TOKEN = token;
   const requested = [];
@@ -32,6 +34,8 @@ test('function paginates links and returns only paid completed sessions', async 
     ], has_more: false }) };
   };
   const links = JSON.parse((await handler(event('links'))).body);
+  const blobContext = JSON.parse(Buffer.from(process.env.NETLIFY_BLOBS_CONTEXT, 'base64').toString('utf8'));
+  assert.equal(blobContext.siteID, 'site-test');
   assert.deepEqual(links.links.map(link => link.id), ['plink_a', 'plink_b']);
   assert.equal(links.campaignLinkId, '');
   assert.deepEqual(links.links.map(link => link.name), ['Choir campaign', 'Summer drive']);

@@ -1,4 +1,5 @@
 const { timingSafeEqual } = require('node:crypto');
+const { connectLambda } = require('@netlify/blobs');
 const campaign = require('../lib/campaign.cjs');
 
 const headers = {
@@ -63,11 +64,13 @@ exports.handler = async (event) => {
         const link = await stripeGet(`payment_links/${linkId}`, {}, key);
         if (link.id !== linkId || !link.active) return respond(400, { error: 'Choose an active Payment Link.' });
       }
+      connectLambda(event);
       await campaign.write(linkId);
       return respond(200, { mode, linkId });
     }
     if (action === 'links') {
       const links = await listAll('payment_links', { limit: 100, active: true, 'expand[]': 'data.line_items' }, key);
+      connectLambda(event);
       const campaignLinkId = await campaign.read();
       return respond(200, { mode, campaignLinkId, links: links.map(link => {
         const items = link.line_items?.data || [];

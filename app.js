@@ -37,15 +37,15 @@ function money(cents, currency = 'usd', compact = false) {
   try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: compact ? 0 : 2, minimumFractionDigits: compact ? 0 : 2 }).format(cents / 100); }
   catch { return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`; }
 }
-function duration(ms, seconds = false) {
+function duration(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor(total % 3600 / 60);
-  return seconds ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 function tick() {
   $('campaign-timer').textContent = duration(timer.elapsed + (timer.startedAt ? Date.now() - timer.startedAt : 0));
-  $('since-last').textContent = lastGiftAt ? duration(Date.now() - lastGiftAt * 1000, true) : '—';
+  $('since-last').textContent = lastGiftAt ? duration(Date.now() - lastGiftAt * 1000) : '—';
   $('timer-button').textContent = timer.startedAt ? '❚❚ Stop timer' : '▶ Start timer';
 }
 function renderChart(summary) {

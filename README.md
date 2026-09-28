@@ -1,4 +1,4 @@
-# TCBC Text-a-Thon v2
+# TCBC Text-a-Thon
 
 A Netlify hosted donation dashboard for Stripe Payment Links. Campaign settings, selected link, polling interval, and dashboard access token are saved in the operator browser's local storage. The selected Payment Link ID is also published to a site-wide Netlify Blob when the operator saves configuration. Netlify Functions read Stripe and redirect donors from short `/donate?for=...` URLs; the restricted Stripe key stays in Netlify's environment.
 

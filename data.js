@@ -45,10 +45,21 @@ export function summarize(donations) {
     const name = getFor(donation);
     const key = name.toLocaleLowerCase();
     const previous = groups.get(key);
-    groups.set(key, { name: previous?.name || name, amount: (previous?.amount || 0) + donation.amount });
+    groups.set(key, { name: previous?.name || name, amount: (previous?.amount || 0) + donation.amount, count: (previous?.count || 0) + 1 });
   }
-  const leaders = [...groups.values()].sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name)).slice(0, 10);
-  return { count: valid.length, total: valid.reduce((sum, item) => sum + item.amount, 0), currency: currencies[0] || 'usd', lastDonation: valid.reduce((max, item) => Math.max(max, Number(item.created || 0)), 0), leaders };
+  const donors = [...groups.values()].sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+  return { count: valid.length, total: valid.reduce((sum, item) => sum + item.amount, 0), currency: currencies[0] || 'usd', lastDonation: valid.reduce((max, item) => Math.max(max, Number(item.created || 0)), 0), leaders: donors.slice(0, 10), donors };
+}
+
+function csvCell(value) {
+  let text = String(value);
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+export function donorsCsv(donors) {
+  const rows = donors.map(donor => [donor.name, (donor.amount / 100).toFixed(2), donor.count]);
+  return ['Name,Total Amount,Number of Donations', ...rows.map(row => row.map(csvCell).join(','))].join('\r\n') + '\r\n';
 }
 
 export function shareUrl(siteOrigin, name) {

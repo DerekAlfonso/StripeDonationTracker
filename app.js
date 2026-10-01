@@ -1,4 +1,4 @@
-import { preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from './data.js';
+import { donorsCsv, preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from './data.js';
 
 const STORAGE = 'giving-board-config-v1';
 const TIMER = 'giving-board-timer-v1';
@@ -77,6 +77,18 @@ function renderDashboard() {
   const badge = $('mode-badge'); badge.className = `mode-badge ${mode}`; badge.textContent = mode === 'demo' ? 'DEMO MODE' : `${mode.toUpperCase()} MODE`;
   $('connection-message').textContent = mode === 'demo' ? 'Demo data is displayed until a Stripe connection is configured.' : `Showing paid Checkout Sessions for ${config.linkId}.`;
   renderChart(summary); tick();
+}
+function exportCsv() {
+  let summary;
+  try { summary = summarize(donations); } catch (error) { $('connection-message').textContent = error.message; return; }
+  if (!summary.donors.length) { $('last-sync').textContent = 'No donations to export yet'; return; }
+  const slug = (config.name || DEFAULT_CAMPAIGN_NAME).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'donations';
+  const url = URL.createObjectURL(new Blob(['﻿', donorsCsv(summary.donors)], { type: 'text/csv;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = `${slug}-donors-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.append(anchor); anchor.click(); anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $('last-sync').textContent = `Exported ${summary.donors.length} donor${summary.donors.length === 1 ? '' : 's'}`;
 }
 function renderLinks(selectedId) {
   const select = $('payment-link'); select.replaceChildren();
@@ -186,6 +198,7 @@ function setup() {
   $('clear-token-button').addEventListener('click', () => { $('access-token').value = ''; config.token = ''; localStorage.setItem(STORAGE, JSON.stringify(config)); clearInterval(pollHandle); donations = demoDonations; mode = 'demo'; renderDashboard(); setStatus('Token removed from this browser.'); });
   $('copy-link').addEventListener('click', async () => { if (!$('share-url').value) { $('save-status').textContent = 'Save a Payment Link and enter a name first.'; return; } try { await navigator.clipboard.writeText($('share-url').value); $('copy-link').textContent = 'Copied!'; setTimeout(() => $('copy-link').textContent = 'Copy', 1800); } catch { $('share-url').select(); $('save-status').textContent = 'Select and copy the URL above.'; } });
   $('refresh-button').addEventListener('click', refreshDonations);
+  $('export-button').addEventListener('click', exportCsv);
   $('fullscreen-button').addEventListener('click', async () => { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); });
   $('timer-button').addEventListener('click', () => { if (timer.startedAt) { timer.elapsed += Date.now() - timer.startedAt; timer.startedAt = null; } else timer.startedAt = Date.now(); persistTimer(); tick(); });
   $('timer-reset').addEventListener('click', () => { timer = { elapsed: 0, startedAt: null }; persistTimer(); tick(); });

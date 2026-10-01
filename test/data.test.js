@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeFor, decodeFor, getFor, preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from '../data.js';
+import { donorsCsv, encodeFor, decodeFor, getFor, preferredPaymentLinkId, shareUrl, sortPaymentLinks, summarize } from '../data.js';
 
 test('share URL contains only the requested for parameter', () => {
   const url = new URL(shareUrl('https://giving.example', 'Derek A'));
@@ -26,6 +26,25 @@ test('summarize groups names, sorts descending, and selects the latest paid dona
   assert.equal(result.total, 7500);
   assert.equal(result.lastDonation, 30);
   assert.deepEqual(result.leaders.map(item => [item.name, item.amount]), [['Derek A', 4500], ['Sam', 3000]]);
+});
+
+test('summarize returns every donor with donation counts, and the CSV export includes all of them', () => {
+  const donations = Array.from({ length: 12 }, (_, index) => ({ amount: 1000 + index, currency: 'usd', created: index, reference: encodeFor(`Donor ${index}`) }));
+  donations.push({ amount: 250, currency: 'usd', created: 99, reference: encodeFor('donor 0') });
+  const result = summarize(donations);
+  assert.equal(result.leaders.length, 10);
+  assert.equal(result.donors.length, 12);
+  assert.equal(result.donors.find(item => item.name === 'Donor 0').count, 2);
+  const lines = donorsCsv(result.donors).trim().split('\r\n');
+  assert.equal(lines[0], 'Name,Total Amount,Number of Donations');
+  assert.equal(lines.length, 13);
+  assert.ok(lines.includes('Donor 0,12.50,2'));
+});
+
+test('CSV export escapes commas and quotes and neutralizes spreadsheet formulas', () => {
+  const csv = donorsCsv([{ name: 'Smith, "Bob"', amount: 500, count: 1 }, { name: '=HYPERLINK("x")', amount: 100, count: 3 }]);
+  assert.ok(csv.includes('"Smith, ""Bob""",5.00,1'));
+  assert.ok(csv.includes(`"'=HYPERLINK(""x"")",1.00,3`));
 });
 
 test('For custom field provides a fallback when no share reference exists', () => {
